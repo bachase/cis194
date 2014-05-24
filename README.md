@@ -1,5 +1,5 @@
-cis198
+cis194
 ======
 
-Exercises for Brent Yorgey's [cis198 course](http://www.seas.upenn.edu/~cis194/).
+Exercises for Brent Yorgey's [cis194 course](http://www.seas.upenn.edu/~cis194/).
 
