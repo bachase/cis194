@@ -43,5 +43,17 @@ insertTree x (Node h left v right)
 foldTree :: [a] -> Tree a
 foldTree = foldr insertTree Leaf
 
+-- Exercise 3
+
+xor :: [Bool] -> Bool
+xor = odd . length . filter id
+
+map' :: (a -> b) -> [a] -> [b]
+map' f = foldr (\x y -> (f x):y) []
+
+-- Exercise 4
+sieveSundaram :: Integer -> [Integer]
+sieveSundaram n = map (\x -> 2*x + 1) $ [1..n] \\ bads
+    where bads = [ i + j + 2*i*j | i <- [1..n], j <- [1..n]]
 
 
