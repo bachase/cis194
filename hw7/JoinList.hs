@@ -13,6 +13,13 @@ tag Empty = mempty
 tag (Single m _ ) = m
 tag (Append m _ _) = m
 
+valJ :: JoinList m a -> Maybe a
+-- Returns value stored in single list, otherwise nothing
+valJ Empty = Nothing
+valJ (Single _ x) = Just x
+valJ _ = Nothing
+
+
 (+++) :: Monoid m => JoinList m a -> JoinList m a -> JoinList m a
 (+++) Empty x = x
 (+++) x Empty = x
@@ -22,33 +29,30 @@ instance (Monoid b) => Monoid (JoinList b a) where
     mempty = Empty
     mappend = (+++)
 
-foldJ :: (Sized b, Monoid b, Monoid r) =>
-    r -> (Int -> JoinList b a -> r) -> Int -> JoinList b a -> r
-foldJ e _ _ Empty = e
-foldJ e f n (Append _ l1 l2) = (foldJ e f n l1) <> (foldJ e f (n-n1) l2)
-    where n1 = getSize . size $ tag l1
-foldJ e f n l = f n l
+foldJ :: (Sized b, Monoid b) =>
+    r -> (Int -> JoinList b a -> r) -> (Int -> Int -> r -> r -> r)
+    -> Int -> JoinList b a -> r
+foldJ e _ _ _ Empty = e
+foldJ e f g n (Append _ l1 l2) 
+    = g n n1 (foldJ e f g n l1) (foldJ e f g (n-n1) l2)
+        where n1 = getSize . size $ tag l1
+foldJ _ f _ n l = f n l
 
 indexJ :: (Sized b, Monoid b) =>
           Int -> JoinList b a -> Maybe a
 -- finds the JoinList element at specified index
-indexJ _ Empty = Nothing
-indexJ i (Single n x) 
-    | i == 0    = Just x
-    | otherwise = Nothing
-indexJ i (Append _ l1 l2)
-    | i < n1 = indexJ i l1
-    | otherwise = indexJ (i - n1) l2
+indexJ = foldJ Nothing f g
     where
-      n1 = getSize . size $ tag l1
+        f n l = if(n == 0) then valJ l else Nothing
+        g n n1 r1 r2 = if(n < n1) then r1 else r2
 
 dropJ :: (Sized b, Monoid b) =>
          Int -> JoinList b a -> JoinList b a
-dropJ = = Empty (\n l-> if (n <= 0) then l else Empty) 
+dropJ = foldJ Empty (\n l-> if (n <= 0) then l else Empty) (\_ _ x y -> x +++ y)
 
 takeJ :: (Sized b, Monoid b) =>
          Int -> JoinList b a -> JoinList b a
-takeJ = Empty (\n l-> if (n > 0) then l else Empty) 
+takeJ = foldJ Empty (\n l-> if (n > 0) then l else Empty) (\_ _ x y -> x +++ y)
 
 jlToList :: JoinList m a -> [a]
 jlToList Empty           = []
