@@ -1,7 +1,9 @@
+{-# LANGUAGE FlexibleInstances, TypeSynonymInstances #-}
 module JoinList where
 
 import Data.Monoid
 import Sized
+import Scrabble
 
 data JoinList m a = Empty
                   | Single m a
@@ -46,15 +48,35 @@ indexJ = foldJ Nothing f g
         f n l = if(n == 0) then valJ l else Nothing
         g n n1 r1 r2 = if(n < n1) then r1 else r2
 
+accumJ :: (Sized b, Monoid b, Monoid r) =>
+    r -> (Int -> JoinList b a -> r) -> Int -> JoinList b a -> r
+accumJ e f n = foldJ e f (\_ _ x y -> x <> y) n
+
+
 dropJ :: (Sized b, Monoid b) =>
          Int -> JoinList b a -> JoinList b a
-dropJ = foldJ Empty (\n l-> if (n <= 0) then l else Empty) (\_ _ x y -> x +++ y)
+dropJ = accumJ Empty (\n l-> if (n <= 0) then l else Empty)
 
 takeJ :: (Sized b, Monoid b) =>
          Int -> JoinList b a -> JoinList b a
-takeJ = foldJ Empty (\n l-> if (n > 0) then l else Empty) (\_ _ x y -> x +++ y)
+takeJ = accumJ Empty (\n l-> if (n > 0) then l else Empty)
+
+splitAtJ :: (Sized b, Monoid b) =>
+             Int -> JoinList b a -> (JoinList b a, JoinList b a)
+splitAtJ = accumJ (Empty, Empty) leafCase
+    where
+        leafCase n l = if(n <= 0) then (Empty, l) else (l, Empty)
+
 
 jlToList :: JoinList m a -> [a]
 jlToList Empty           = []
 jlToList (Single _ a)     = [a]
 jlToList (Append _ l1 l2) = jlToList l1 ++ jlToList l2
+
+
+-- Exercise 3
+scoreLine :: String -> JoinList Score String
+scoreLine s = Single (scoreString s) s
+
+strToLine :: String -> JoinList (Score, Size) String
+strToLine s = Single ((scoreString s),(Size 1)) s
